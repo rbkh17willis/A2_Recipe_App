@@ -1,14 +1,53 @@
+{% load static %}
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
-<title>
-    Recipes App Home
-</title>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<body>
-    <h1 style="display: flex; justify-content: center; margin-top: 150px;">
-        Welcome to My Recipes App
-    </h1>
-</body>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+            rel="stylesheet">
+
+        <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+        <title>Recipes Home</title>
+
+    </head>
+
+    <body>
+        <div class="flex-container">
+            <div class="center-div">
+                <h1 class="main-header">Welcome to the Recipe App</h1>
+                <div class="login-container">
+                    <div class="top-notch"></div>
+                    <img src="{% static 'images/place-picture-here.jpg' %}" alt="recipe-image" class="login-image" />
+                    <div class="login-form">
+                        <p class="login-welcome">Login to see your recipes</p>
+
+                        <div class="username-field">
+                            <img src="{% static 'images/place-picture-here.svg' %}" class="login-icon" />
+                            <input type="text" placeholder="Username" class="login-form-element">
+                        </div>
+                        <div class="username-field">
+                            <img src="{% static 'images/place-picture-here.svg' %}" class="login-icon" />
+                            <input type="password" placeholder="Password" class="login-form-element">
+                        </div>
+                        <div>
+                            <button class="submit-button">Submit</button>
+                        </div>
+
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <script src="{% static 'js/script.js' %}"></script>
+    </body>
 
 </html>
