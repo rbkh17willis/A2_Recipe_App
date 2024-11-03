@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&display=swap');
 
 * {
-  background: url("/static/recipes/images/main_background.jpg") 20% 0 repeat fixed;
+  background: image('recipe-welcome.jpg' )20% 0 repeat fixed;
   background-size: cover;
   background-color: ghostwhite;
 }

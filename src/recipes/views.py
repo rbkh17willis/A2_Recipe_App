@@ -1,44 +1,104 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Q
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView, DetailView
+from .forms import RecipeSearchForm, RecipeForm
 from .models import Recipe
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import AuthenticationForm
+from .utils import get_chart
+
+import pandas as pd
 
 # Create your views here.
-def home(request):
-  return redirect('login')
+@login_required
+def get_queryset(request):
+    form = RecipeSearchForm(request.POST or None)
+    # Initialize dataframe
+    recipes_df = None
+    qs = None
+    chart = None
 
-class RecipeListView(ListView):
-    model = Recipe
-    template_name = "recipes/recipe_list.html"
+    if request.method == 'POST':
+      recipe_search = request.POST.get('recipe_search')
+      chart_type = request.POST.get('chart_type')
 
-class RecipeDetailView(DetailView):
-    model = Recipe
-    template_name = "recipes/recipe_details.html"
+      qs = Recipe.objects.filter(
+          Q(name__icontains=recipe_search) |
+          Q(ingredients__icontains=recipe_search) |
+          Q(name=recipe_search)
+        )
 
-def login_view(request):
-  error_message = None
-  form = AuthenticationForm()
+      if qs:
+        recipes_df = pd.DataFrame(qs.values())
 
+        chart = get_chart(chart_type, recipes_df, recipe_search)
+
+        #convert the dataframe to HTML
+        recipes_df=recipes_df.to_html()
+
+      else:
+        qs = 'No recipes found'
+
+    context = {
+      'form': form,
+      'recipes_df': recipes_df,
+      'qs': qs,
+      'chart': chart}
+
+    return render(request, 'recipes/recipe_search.html', context)
+
+@login_required
+def add_recipe(request):
   if request.method == 'POST':
-    form = AuthenticationForm(data = request.POST)
+    form = RecipeForm(request.POST, request.FILES)
+
     if form.is_valid():
-      username = form.cleaned_data.get('username')
-      password = form.cleaned_data.get('password')
-      user = authenticate(username = username, password = password)
-      if user is not None:
-        login(request, user)
-        return redirect('recipes:list')
+      form.save()
+      messages.info(request, 'Recipe added successfully!')
+      return redirect('recipes:list')
+  else:
+    form = RecipeForm()
+
+  return render(request, 'recipes/add_recipe.html', {'form': form})
+@login_required
+def update_recipe(request, pk):
+    # Retrieve the recipe or return a 404 if not found
+    recipe = get_object_or_404(Recipe, pk=pk)
+    if request.method == 'POST':
+        form = RecipeForm(request.POST, request.FILES, instance=recipe)
+        if form.is_valid():
+            form.save()
+            messages.info(request, 'Recipe updated successfully!')
+            return redirect('recipes:detail', recipe.pk)
     else:
-      error_message = 'oops... something went wrong'
-  context = {
-    'form': form,
-    'error_message': error_message
-  }
+        # If not a POST request, instantiate the form with the existing recipe
+        form = RecipeForm(instance=recipe)
+    # Render the template with the form and recipe instance
+    return render(request, 'recipes/recipe_detail.html', {'form': form, 'object': recipe})
+@login_required
+def delete_recipe(request, pk):
+  recipe = get_object_or_404(Recipe, pk=pk)
+  recipe.delete()
+  messages.info(request, 'Recipe deleted successfully!')
+  return redirect('recipes:list')
 
-  return render(request, 'auth/home.html', context)
+@login_required
+def about_page(request):
+  return render(request, 'recipes/about.html')
 
-def logout_view(request):
-  logout(request)
-  return render(request, 'auth/success.html')
+class RecipeListView(LoginRequiredMixin, ListView):
+  model = Recipe
+  template_name = 'recipes/recipe_list.html'
 
+
+class RecipeDetailView(LoginRequiredMixin, DetailView):
+  model = Recipe
+  template_name = 'recipes/recipe_detail.html'
+
+  def get_context_data(self, **kwargs):
+      context = super().get_context_data(**kwargs) # Adds extra information to the context passed to the template.
+      
+      recipe = self.get_object() # Retrieves the specific Recipe object being viewed.
+      context['form'] = RecipeForm(instance=recipe)  # Adds a form populated with the recipe's data to the context.
+      return context
